@@ -1,4 +1,3 @@
-// screens/HomeScreen.tsx
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { router } from "expo-router";
@@ -41,7 +40,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#7EC8E3", // soft blue like your wireframe
+    backgroundColor: "#7EC8E3",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,

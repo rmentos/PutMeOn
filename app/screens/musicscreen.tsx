@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   exploreButton: {
-    backgroundColor: "#1DB954", // Spotify green
+    backgroundColor: "#1DB954",
   },
   genreButton: {
     backgroundColor: "#333",

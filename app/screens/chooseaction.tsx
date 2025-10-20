@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   listenButton: {
-    backgroundColor: "#1DB954", // Spotify green
+    backgroundColor: "#1DB954",
   },
   addButton: {
     backgroundColor: "#333",
