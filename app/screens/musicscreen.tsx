@@ -1,14 +1,56 @@
 import React from "react";
 import {
-  View,
-  Text,
+  Dimensions,
   Image,
-  TouchableOpacity,
-  StyleSheet,
   Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 export default function musicscreen() {
+  const { width } = Dimensions.get("window");
+  const SWIPE_THRESHOLD = width * 0.25;
+  const translateX = useSharedValue(0);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
+        // Animate off-screen
+        translateX.value = withSpring(
+          event.translationX > 0 ? width : -width,
+          {},
+          () => {
+            translateX.value = 0;
+          }
+        );
+      } else {
+        // Snap back to center
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { rotate: `${translateX.value / 20}deg` },
+    ],
+  }));
+
   // Placeholder data
   const track = {
     title: "Midnight City",
@@ -18,47 +60,59 @@ export default function musicscreen() {
     coverUrl:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYprxUcIQ1gSLCA_gBXTENCkCPTcGPIBZpEw&s",
   };
-
   return (
-    <View style={styles.container}>
-      <View style={styles.topButtons}>
-        <TouchableOpacity style={[styles.topButton, styles.exploreButton]}>
-          <Text style={styles.topButtonText}>Explore</Text>
-        </TouchableOpacity>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <View style={styles.topButtons}>
+          <TouchableOpacity style={[styles.topButton, styles.exploreButton]}>
+            <Text style={styles.topButtonText}>Explore</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.topButton, styles.genreButton]}>
-          <Text style={styles.topButtonText}>Genres</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={[styles.topButton, styles.genreButton]}>
+            <Text style={styles.topButtonText}>Genres</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.recommender}>
+          Recommended by {track.recommender}
+        </Text>
+
+        <View style={styles.container}>
+          <GestureDetector gesture={panGesture}>
+            <Animated.View style={animatedStyle}>
+              <Image
+                source={{ uri: track.coverUrl }}
+                style={styles.coverImage}
+              />
+            </Animated.View>
+          </GestureDetector>
+        </View>
+
+        <View style={styles.songInfo}>
+          <Text style={styles.songTitle}>{track.title}</Text>
+          <Text style={styles.artist}>{track.artist}</Text>
+
+          <TouchableOpacity onPress={() => Linking.openURL(track.spotifyUrl)}>
+            <Text style={styles.spotifyLink}>Listen on Spotify</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.skipButton]}
+            onPress={() => console.log("Skip")}
+          >
+            <Text style={styles.buttonText}>Skip</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.likeButton]}
+            onPress={() => console.log("Like")}
+          >
+            <Text style={styles.buttonText}>Like 👍</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <Text style={styles.recommender}>Recommended by {track.recommender}</Text>
-
-      <Image source={{ uri: track.coverUrl }} style={styles.coverImage} />
-
-      <View style={styles.songInfo}>
-        <Text style={styles.songTitle}>{track.title}</Text>
-        <Text style={styles.artist}>{track.artist}</Text>
-
-        <TouchableOpacity onPress={() => Linking.openURL(track.spotifyUrl)}>
-          <Text style={styles.spotifyLink}>Listen on Spotify</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.button, styles.skipButton]}
-          onPress={() => console.log("Skip")}
-        >
-          <Text style={styles.buttonText}>Skip</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.likeButton]}
-          onPress={() => console.log("Like")}
-        >
-          <Text style={styles.buttonText}>Like 👍</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 

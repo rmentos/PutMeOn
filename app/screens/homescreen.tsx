@@ -1,10 +1,20 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import * as AuthSession from "expo-auth-session";
 import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Loginscreen from "./modals/loginscreen";
 
 export default function HomeScreen() {
   const [showLogin, setShowLogin] = useState(false);
+  useEffect(() => {
+    // This works in both Expo Go and standalone apps
+    const redirectUri = AuthSession.makeRedirectUri({
+      native: "putmeonapp://redirect", // for standalone builds
+      path: "redirect", // optional
+    });
+
+    console.log("Redirect URI:", redirectUri);
+  }, []);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>PutMeOn!</Text>
