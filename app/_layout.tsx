@@ -8,10 +8,17 @@ export default function RootLayout() {
       <Stack.Screen name="actions" options={{ title: "Post Log In" }} />
       <Stack.Screen name="suggestion" options={{ title: "Post Log In" }} />
       <Stack.Screen
-        name="modal/login"
+        name="screens/modals/loginscreen"
         options={{
           presentation: "modal",
           title: "Login / Sign Up",
+        }}
+      />
+      <Stack.Screen
+        name="screens/modals/profilescreen"
+        options={{
+          presentation: "modal",
+          title: "Edit Profile",
         }}
       />
     </Stack>

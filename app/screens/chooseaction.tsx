@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { router } from "expo-router";
+import ProfileScreen from "./modals/profilescreen";
 
 export default function ChooseActionScreen() {
+  const [showProfile, setProfile] = useState(false);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome back 👋</Text>
@@ -23,6 +25,28 @@ export default function ChooseActionScreen() {
           <Text style={styles.buttonText}>Discover Music</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.actionButton, styles.addButton]}
+          onPress={() => setProfile(true)}
+        >
+          <Image
+            source={{
+              uri: "https://cdn-icons-png.flaticon.com/512/1077/1077063.png",
+            }}
+            style={styles.icon}
+          />
+          <Text style={styles.buttonText}>Edit Profile</Text>
+        </TouchableOpacity>
+        {showProfile && (
+          <ProfileScreen
+            visible={showProfile}
+            onClose={() => setProfile(false)}
+            onLogin={() => {
+              setProfile(false); // close modal
+              router.back(); // move to next page
+            }}
+          />
+        )}
         <TouchableOpacity
           style={[styles.actionButton, styles.addButton]}
           onPress={() => router.push("/suggestion")}
