@@ -1,5 +1,5 @@
 // api/api.ts
-const API_URL = "10.40.115.117:8081";
+const API_URL = "http://10.40.115.117:3001";
 
 export const submitSuggestion = async (
   song: string,
@@ -23,8 +23,9 @@ export const submitSuggestion = async (
 
 export const getHealthCheck = async () => {
   try {
-    const response = await fetch(`${API_URL}/`);
+    const response = await fetch(`${API_URL}/spotify/token`);
     const data = await response.json();
+    console.log("Got response:", data);
     return data;
   } catch (error) {
     console.error("Backend connection failed:", error);
