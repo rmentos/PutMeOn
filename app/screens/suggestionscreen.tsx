@@ -1,31 +1,53 @@
-import React, { useState } from "react";
+import { searchSong } from "@/api/api";
+import { playPreview, stopPreview } from "@/library/musicPlayer";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  FlatList,
+  Image,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  Image,
   TouchableOpacity,
-  FlatList,
+  View,
 } from "react-native";
-
+type SpotifyTrack = {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  album: { images: { url: string }[] };
+  preview_url?: string;
+};
 export default function SuggestionsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [results, setResults] = useState<string[]>([]);
-  const [selectedSong, setSelectedSong] = useState<string | null>(null);
+  const [results, setResults] = useState<SpotifyTrack[]>([]);
+  const [selectedSong, setSelectedSong] = useState<SpotifyTrack | null>(null);
 
-  // Mock search logic
+  useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      if (searchQuery.trim().length > 0) {
+        const data = await searchSong(searchQuery);
+        setResults(data?.tracks?.items || []);
+      } else {
+        setResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+  useEffect(() => {
+    if (selectedSong?.preview_url) {
+      playPreview(selectedSong.preview_url!);
+
+      return () => {
+        stopPreview();
+      };
+    } else {
+      stopPreview();
+    }
+  }, [selectedSong]);
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (query.length > 1) {
-      setResults([
-        "Midnight City - M83",
-        "Electric Feel - MGMT",
-        "R U Mine? - Arctic Monkeys",
-      ]);
-    } else {
-      setResults([]);
-    }
   };
 
   return (
@@ -38,20 +60,17 @@ export default function SuggestionsScreen() {
         value={searchQuery}
         onChangeText={handleSearch}
       />
-
       {/* Show selected song or results */}
       {selectedSong ? (
         <View style={styles.previewContainer}>
           <Text style={styles.recommender}>Your Selection</Text>
 
           <Image
-            source={{
-              uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS3x3ootxLDpQZ4E_9DE46F84m1JAAVxhLHwA&s",
-            }}
+            source={{ uri: selectedSong.album.images[0]?.url }}
             style={styles.coverImage}
           />
 
-          <Text style={styles.songTitle}>{selectedSong}</Text>
+          <Text style={styles.songTitle}>{selectedSong.name}</Text>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -72,18 +91,23 @@ export default function SuggestionsScreen() {
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item) => item}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => setSelectedSong(item)}
               style={styles.resultItem}
             >
-              <Text style={styles.resultText}>{item}</Text>
+              <View>
+                <Text style={styles.resultText}>{item.name}</Text>
+                <Text style={styles.resultText}>
+                  {item.artists.map((a) => a.name).join(", ")}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            searchQuery.length > 0 && results.length === 0 ? (
-              <Text style={styles.noResults}>No songs found.</Text>
+            searchQuery.length > 0 ? (
+              <Text style={styles.noResults}>No results found</Text>
             ) : null
           }
         />

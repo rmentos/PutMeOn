@@ -18,7 +18,14 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-
+type Track = {
+  title: string;
+  artist: string;
+  recommender: string;
+  spotifyUrl: string;
+  coverUrl: string;
+  previewUrl: string; // optional for 30s preview
+};
 export default function musicscreen() {
   const { width } = Dimensions.get("window");
   const SWIPE_THRESHOLD = width * 0.25;
@@ -52,14 +59,29 @@ export default function musicscreen() {
   }));
 
   // Placeholder data
-  const track = {
-    title: "Midnight City",
-    artist: "M83",
-    recommender: "user123",
-    spotifyUrl: "https://open.spotify.com/track/3sNVsP50132BTNlImLx70i",
-    coverUrl:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYprxUcIQ1gSLCA_gBXTENCkCPTcGPIBZpEw&s",
-  };
+  const tracks: Track[] = [
+    {
+      title: "Blinding Lights",
+      artist: "The Weeknd",
+      recommender: "user456",
+      spotifyUrl: "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b",
+      coverUrl:
+        "https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36",
+      previewUrl:
+        "https://p.scdn.co/mp3-preview/2d3535c8b2b8e0c7d9db3b9492a04cc9e33c2b78?cid=1234567890",
+    },
+    {
+      title: "Midnight City",
+      artist: "M83",
+      recommender: "user123",
+      spotifyUrl: "https://open.spotify.com/track/3sNVsP50132BTNlImLx70i",
+      coverUrl:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYprxUcIQ1gSLCA_gBXTENCkCPTcGPIBZpEw&s",
+      previewUrl:
+        "https://p.scdn.co/mp3-preview/f5c8b0e09b1b515a62dff5e6e7b3d6db6dfdba8c?cid=1234567890", // fake example
+    },
+  ];
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
@@ -73,14 +95,14 @@ export default function musicscreen() {
           </TouchableOpacity>
         </View>
         <Text style={styles.recommender}>
-          Recommended by {track.recommender}
+          Recommended by {tracks[0].recommender}
         </Text>
 
         <View style={styles.container}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={animatedStyle}>
               <Image
-                source={{ uri: track.coverUrl }}
+                source={{ uri: tracks[0].coverUrl }}
                 style={styles.coverImage}
               />
             </Animated.View>
@@ -88,10 +110,12 @@ export default function musicscreen() {
         </View>
 
         <View style={styles.songInfo}>
-          <Text style={styles.songTitle}>{track.title}</Text>
-          <Text style={styles.artist}>{track.artist}</Text>
+          <Text style={styles.songTitle}>{tracks[0].title}</Text>
+          <Text style={styles.artist}>{tracks[0].artist}</Text>
 
-          <TouchableOpacity onPress={() => Linking.openURL(track.spotifyUrl)}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(tracks[0].spotifyUrl)}
+          >
             <Text style={styles.spotifyLink}>Listen on Spotify</Text>
           </TouchableOpacity>
         </View>

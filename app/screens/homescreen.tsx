@@ -1,4 +1,5 @@
 import { getHealthCheck } from "@/api/api";
+import { initializeAudioMode } from "@/library/musicPlayer";
 import * as AuthSession from "expo-auth-session";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -8,6 +9,7 @@ import Loginscreen from "./modals/loginscreen";
 export default function HomeScreen() {
   useEffect(() => {
     getHealthCheck();
+    initializeAudioMode();
     const redirectUri = AuthSession.makeRedirectUri({
       native: "putmeonapp://redirect",
       path: "redirect",
