@@ -1,4 +1,5 @@
 import { searchSong } from "@/api/api";
+import { playPreview, stopPreview } from "@/library/musicPlayer";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -10,20 +11,36 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
 type SpotifyTrack = {
   id: string;
   name: string;
   artists: { name: string }[];
   album: { images: { url: string }[] };
   external_urls: { spotify: string };
+  preview_url?: string | null; // official Spotify preview (may be null)
+  previewUrls: string[]; // fallback previews from spotify-preview-finder
 };
 
 export default function SuggestionsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SpotifyTrack[]>([]);
   const [selectedSong, setSelectedSong] = useState<SpotifyTrack | null>(null);
+  useEffect(() => {
+    if (!selectedSong) return;
 
+    const previewUrl = selectedSong.previewUrls[0];
+
+    if (previewUrl) {
+      playPreview(previewUrl);
+    } else {
+      console.log("No preview available for this song");
+    }
+
+    //  Cleanup: stop audio when user changes song or leaves screen
+    return () => {
+      stopPreview();
+    };
+  }, [selectedSong]);
   useEffect(() => {
     const delayDebounce = setTimeout(async () => {
       if (searchQuery.trim().length > 0) {

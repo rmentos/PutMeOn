@@ -3,6 +3,7 @@ const axios = require("axios");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const spotifyPreviewFinder = require("spotify-preview-finder");
 
 dotenv.config();
 const app = express();
@@ -73,20 +74,52 @@ app.get("/spotify/token", async (req, res) => {
 });
 
 app.get("/spotify/search", async (req, res) => {
-  const { q } = req.query; // user's search term
+  const { q } = req.query;
 
   try {
     const token = await getSpotifyAccessToken();
-    // Search Spotify API
+
+    // Step 1: Get normal Spotify search data
     const searchResponse = await axios.get(
       "https://api.spotify.com/v1/search",
       {
         headers: { Authorization: `Bearer ${token}` },
-        params: { q, type: "track", limit: 40 },
+        params: { q, type: "track", limit: 10 },
       }
     );
 
-    res.json(searchResponse.data);
+    const tracks = searchResponse.data.tracks.items;
+
+    // Step 2: Enrich each track with preview-finder fallback
+    const resultsWithPreviews = await Promise.all(
+      tracks.map(async (track) => {
+        if (track.preview_url) {
+          // already has a preview
+          return { ...track, previewUrls: [track.preview_url] };
+        }
+
+        try {
+          // try to find public preview
+          const previewData = await spotifyPreviewFinder(track.name);
+          const previewUrls =
+            previewData.success && previewData.results.length > 0
+              ? previewData.results[0].previewUrls
+              : [];
+
+          return { ...track, previewUrls };
+        } catch (err) {
+          console.warn(`No preview found for "${track.name}"`);
+          return { ...track, previewUrls: [] };
+        }
+      })
+    );
+
+    // Step 3: Send combined response
+    res.json({
+      tracks: {
+        items: resultsWithPreviews,
+      },
+    });
   } catch (error) {
     console.error("Error searching Spotify:", error.response?.data || error);
     res.status(500).json({ error: "Failed to fetch from Spotify" });
