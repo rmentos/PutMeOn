@@ -24,7 +24,6 @@ type Track = {
   recommender: string;
   spotifyUrl: string;
   coverUrl: string;
-  previewUrl: string; // optional for 30s preview
 };
 export default function musicscreen() {
   const { width } = Dimensions.get("window");
@@ -67,8 +66,6 @@ export default function musicscreen() {
       spotifyUrl: "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b",
       coverUrl:
         "https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36",
-      previewUrl:
-        "https://p.scdn.co/mp3-preview/2d3535c8b2b8e0c7d9db3b9492a04cc9e33c2b78?cid=1234567890",
     },
     {
       title: "Midnight City",
@@ -77,8 +74,6 @@ export default function musicscreen() {
       spotifyUrl: "https://open.spotify.com/track/3sNVsP50132BTNlImLx70i",
       coverUrl:
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYprxUcIQ1gSLCA_gBXTENCkCPTcGPIBZpEw&s",
-      previewUrl:
-        "https://p.scdn.co/mp3-preview/f5c8b0e09b1b515a62dff5e6e7b3d6db6dfdba8c?cid=1234567890", // fake example
     },
   ];
 

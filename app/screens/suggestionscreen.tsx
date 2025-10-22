@@ -1,22 +1,24 @@
 import { searchSong } from "@/api/api";
-import { playPreview, stopPreview } from "@/library/musicPlayer";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Image,
+  Linking,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+
 type SpotifyTrack = {
   id: string;
   name: string;
   artists: { name: string }[];
   album: { images: { url: string }[] };
-  preview_url?: string;
+  external_urls: { spotify: string };
 };
+
 export default function SuggestionsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SpotifyTrack[]>([]);
@@ -34,25 +36,27 @@ export default function SuggestionsScreen() {
 
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
-  useEffect(() => {
-    if (selectedSong?.preview_url) {
-      playPreview(selectedSong.preview_url!);
-
-      return () => {
-        stopPreview();
-      };
-    } else {
-      stopPreview();
-    }
-  }, [selectedSong]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
 
+  const openInSpotify = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        alert("Cannot open Spotify link");
+      }
+    } catch (error) {
+      console.error("Error opening Spotify link:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Search Bar (always visible) */}
+      {/* Search Bar */}
       <TextInput
         style={styles.searchBar}
         placeholder="Search for a song or artist..."
@@ -60,7 +64,8 @@ export default function SuggestionsScreen() {
         value={searchQuery}
         onChangeText={handleSearch}
       />
-      {/* Show selected song or results */}
+
+      {/* Show selected song or search results */}
       {selectedSong ? (
         <View style={styles.previewContainer}>
           <Text style={styles.recommender}>Your Selection</Text>
@@ -71,6 +76,15 @@ export default function SuggestionsScreen() {
           />
 
           <Text style={styles.songTitle}>{selectedSong.name}</Text>
+          <Text style={styles.artistText}>
+            {selectedSong.artists.map((a) => a.name).join(", ")}
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, styles.spotifyButton]}
+            onPress={() => openInSpotify(selectedSong.external_urls.spotify)}
+          >
+            <Text style={styles.spotifyButtonText}>Listen on Spotify</Text>
+          </TouchableOpacity>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -131,7 +145,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderColor: "#333",
     borderWidth: 1,
-    marginBottom: 20,
   },
   resultItem: {
     borderBottomColor: "#333",
@@ -151,7 +164,9 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   recommender: {
     color: "#bbb",
@@ -162,24 +177,29 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 15,
-    marginBottom: 25,
+    marginBottom: 20,
   },
   songTitle: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 25,
+    marginBottom: 8,
     textAlign: "center",
+  },
+  artistText: {
+    color: "#bbb",
+    fontSize: 16,
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "80%",
+    marginTop: 15,
   },
   button: {
     flex: 1,
-    paddingVertical: 16,
-    marginHorizontal: 10,
+    marginHorizontal: 8,
+    paddingVertical: 20,
     borderRadius: 10,
     alignItems: "center",
   },
@@ -193,5 +213,17 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: "#1DB954",
+  },
+  spotifyButton: {
+    backgroundColor: "#1DB954",
+    marginHorizontal: 8,
+    paddingVertical: 16, // ⬅️ normal button height
+    borderRadius: 10,
+    textAlign: "center",
+  },
+  spotifyButtonText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "700",
   },
 });
