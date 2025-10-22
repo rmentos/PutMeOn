@@ -18,7 +18,7 @@ export async function initializeAudioMode() {
 export async function playPreview(url: string) {
   try {
     if (!url) {
-      console.warn("⚠️ No preview URL provided");
+      console.warn(" No preview URL provided");
       return;
     }
     const player = createAudioPlayer({ uri: url });
