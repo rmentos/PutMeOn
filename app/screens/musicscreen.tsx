@@ -43,8 +43,6 @@ export default function musicscreen() {
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  // 🔥 Fetch suggestions from Firestore
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
@@ -83,8 +81,6 @@ export default function musicscreen() {
 
     fetchSuggestions();
   }, []);
-
-  // 🎵 Auto-play preview when switching tracks
   useEffect(() => {
     if (suggestions.length === 0) return;
 
@@ -138,7 +134,6 @@ export default function musicscreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        {/* 👤 Recommender */}
         <TouchableOpacity onPress={() => setShowProfileModal(true)}>
           <Text
             style={[
@@ -155,7 +150,6 @@ export default function musicscreen() {
           userName={current.recommender || "guest"}
         />
 
-        {/* 🎵 Album cover with swipe */}
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[animatedStyle]}>
             <Image
@@ -165,8 +159,6 @@ export default function musicscreen() {
             />
           </Animated.View>
         </GestureDetector>
-
-        {/* 🎧 Song info */}
         <View style={styles.songInfo}>
           <Text style={styles.songTitle}>{current.title}</Text>
           <Text style={styles.artist}>{current.artists.join(", ")}</Text>

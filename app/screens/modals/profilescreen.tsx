@@ -127,8 +127,6 @@ export default function EditProfileModal({ visible, onClose }: any) {
             </View>
 
             <Text style={[styles.label, { marginTop: 15 }]}>Social Links:</Text>
-
-            {/* ✅ Dynamically render all input boxes */}
             {socialLinks.map((link, index) => (
               <TextInput
                 key={index}
@@ -140,7 +138,7 @@ export default function EditProfileModal({ visible, onClose }: any) {
               />
             ))}
 
-            {/* ✅ Buttons Row */}
+            {/* Buttons Row */}
             <View style={styles.bottomRow}>
               <TouchableOpacity
                 style={[styles.actionBtn, { flex: 1 }]}

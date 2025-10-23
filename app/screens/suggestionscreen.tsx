@@ -98,12 +98,6 @@ export default function SuggestionsScreen() {
           <Text style={styles.artistText}>
             {selectedSong.artists.map((a) => a.name).join(", ")}
           </Text>
-          <TouchableOpacity
-            style={[styles.button, styles.spotifyButton]}
-            onPress={() => openInSpotify(selectedSong.external_urls.spotify)}
-          >
-            <Text style={styles.spotifyButtonText}>Listen on Spotify</Text>
-          </TouchableOpacity>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
