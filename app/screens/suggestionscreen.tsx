@@ -1,5 +1,7 @@
-import { searchSong } from "@/api/api";
+import { saveSuggestion, searchSong } from "@/api/api";
+import SuccessModal from "@/app/screens/modals/postSubmit";
 import { playPreview, stopPreview } from "@/library/musicPlayer";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -11,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-type SpotifyTrack = {
+export type SpotifyTrack = {
   id: string;
   name: string;
   artists: { name: string }[];
@@ -23,6 +25,7 @@ type SpotifyTrack = {
 
 export default function SuggestionsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showModal, setShowModal] = useState(false);
   const [results, setResults] = useState<SpotifyTrack[]>([]);
   const [selectedSong, setSelectedSong] = useState<SpotifyTrack | null>(null);
   useEffect(() => {
@@ -35,8 +38,6 @@ export default function SuggestionsScreen() {
     } else {
       console.log("No preview available for this song");
     }
-
-    //  Cleanup: stop audio when user changes song or leaves screen
     return () => {
       stopPreview();
     };
@@ -113,10 +114,35 @@ export default function SuggestionsScreen() {
 
             <TouchableOpacity
               style={[styles.button, styles.submitButton]}
-              onPress={() => console.log("Submitted:", selectedSong)}
+              onPress={() => {
+                if (!selectedSong) return;
+                saveSuggestion(selectedSong, "guest")
+                  .then(() =>
+                    console.log("Track suggestion saved:", selectedSong)
+                  )
+                  .catch((err) =>
+                    console.error(" Failed to save suggestion:", err)
+                  );
+                setShowModal(true);
+              }}
             >
               <Text style={styles.buttonText}>Submit</Text>
             </TouchableOpacity>
+            {/*add modal here */}
+            {showModal && (
+              <SuccessModal
+                visible={showModal}
+                onClose={() => setShowModal(false)}
+                onAddMore={() => {
+                  setShowModal(false); // close modal
+                }}
+                onGoHome={() => {
+                  setShowModal(false); // close modal
+                  stopPreview();
+                  router.push("/");
+                }}
+              />
+            )}
           </View>
         </View>
       ) : (

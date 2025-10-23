@@ -1,25 +1,26 @@
 // api/api.ts
 const API_URL = "http://192.168.1.149:3001";
+import { SpotifyTrack } from "@/app/screens/suggestionscreen";
+import { db } from "@/src/firebase";
+import { addDoc, collection } from "firebase/firestore";
 
-export const submitSuggestion = async (
-  song: string,
-  artist: string,
-  user: string
-) => {
+export async function saveSuggestion(track: SpotifyTrack, userId?: string) {
   try {
-    const response = await fetch(`${API_URL}/suggestions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ song, artist, user }),
+    const docRef = await addDoc(collection(db, "suggestions"), {
+      title: track.name,
+      userId: userId || "guest",
+      artists: track.artists.map((a) => a.name),
+      recommender: userId || "guest",
+      previewUrl: track.previewUrls[0] || null,
+      spotifyLinkUrl: track.external_urls.spotify,
+      songCoverUrl: track.album.images[0]?.url || "",
     });
 
-    const data = await response.json();
-    return data;
+    console.log("Suggestion saved with ID:", docRef.id);
   } catch (error) {
-    console.error("Error submitting suggestion:", error);
-    return { success: false, message: "Network error" };
+    console.error("Error saving suggestion:", error);
   }
-};
+}
 
 export const searchSong = async (song: string) => {
   try {
