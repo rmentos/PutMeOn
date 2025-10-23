@@ -1,18 +1,25 @@
 // app/screens/loginmodal.tsx
-import React, { useState, useEffect } from "react";
+import { logIn, signUp } from "@/api/api";
+import { saveUser } from "@/src/storage";
+
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  Alert,
+  Animated,
+  Modal,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Modal,
-  Animated,
+  View,
 } from "react-native";
 
 export default function LoginModal({ visible, onClose, onLogin }: any) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
 
   useEffect(() => {
     if (visible) {
@@ -24,6 +31,32 @@ export default function LoginModal({ visible, onClose, onLogin }: any) {
     }
   }, [visible]);
 
+  const handleAction = async () => {
+    if (isSignUp) {
+      if (password !== confirm) {
+        Alert.alert("Passwords do not match!");
+        return;
+      }
+      const result = await signUp(userName, password);
+      if (result.success) {
+        Alert.alert("Account created successfully!");
+        await saveUser(result.user);
+        onLogin();
+      } else {
+        Alert.alert(result.message || "Error creating account");
+      }
+    } else {
+      const result = await logIn(userName, password);
+      if (result.success) {
+        Alert.alert("Welcome back!");
+        await saveUser(result.user);
+        onLogin();
+      } else {
+        Alert.alert(result.message || "Invalid credentials");
+      }
+    }
+  };
+
   return (
     <Modal transparent visible={visible} animationType="none">
       <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
@@ -34,14 +67,18 @@ export default function LoginModal({ visible, onClose, onLogin }: any) {
 
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder="Username"
             placeholderTextColor="#ccc"
+            value={userName}
+            onChangeText={setUserName}
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor="#ccc"
             secureTextEntry
+            value={password}
+            onChangeText={setPassword}
           />
           {isSignUp && (
             <TextInput
@@ -49,15 +86,12 @@ export default function LoginModal({ visible, onClose, onLogin }: any) {
               placeholder="Confirm Password"
               placeholderTextColor="#ccc"
               secureTextEntry
+              value={confirm}
+              onChangeText={setConfirm}
             />
           )}
 
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => {
-              onLogin(); // closes modal + goes to next page
-            }}
-          >
+          <TouchableOpacity style={styles.actionBtn} onPress={handleAction}>
             <Text style={styles.actionText}>
               {isSignUp ? "Sign Up" : "Log In"}
             </Text>

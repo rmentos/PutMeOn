@@ -1,4 +1,9 @@
-import React from "react";
+import RecommenderProfileModal from "@/app/screens/modals/showProfile";
+import { playPreview, stopPreview } from "@/library/musicPlayer";
+
+import { db } from "@/src/firebase";
+import { collection, getDocs } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -14,38 +19,101 @@ import {
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-type Track = {
+
+type Suggestion = {
+  id?: string;
   title: string;
-  artist: string;
+  artists: string[];
   recommender: string;
-  spotifyUrl: string;
-  coverUrl: string;
+  previewUrl?: string | null;
+  spotifyLinkUrl: string;
+  songCoverUrl: string;
 };
+
 export default function musicscreen() {
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const { width } = Dimensions.get("window");
   const SWIPE_THRESHOLD = width * 0.25;
   const translateX = useSharedValue(0);
 
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 🔥 Fetch suggestions from Firestore
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "suggestions"));
+        const data = snapshot.docs.map((doc) => {
+          const docData = doc.data();
+
+          return {
+            id: doc.id,
+            title: docData.title || "Untitled",
+            artists: docData.artists || ["Unknown Artist"],
+            recommender:
+              docData.recommender ||
+              docData.Recommender ||
+              docData.recommenderName ||
+              "guest",
+            previewUrl: docData.previewUrl ?? null,
+            spotifyLinkUrl: docData.spotifyLinkUrl || "",
+            songCoverUrl:
+              docData.songCoverUrl ||
+              "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg",
+          };
+        }) as Suggestion[];
+
+        // Shuffle order for variety
+        const shuffled = data
+          .map((s) => ({ s, sort: Math.random() }))
+          .sort((a, b) => a.sort - b.sort)
+          .map(({ s }) => s);
+
+        setSuggestions(shuffled);
+      } catch (error) {
+        console.error("Error fetching Firestore suggestions:", error);
+      }
+    };
+
+    fetchSuggestions();
+  }, []);
+
+  // 🎵 Auto-play preview when switching tracks
+  useEffect(() => {
+    if (suggestions.length === 0) return;
+
+    const track = suggestions[currentIndex];
+    if (track.previewUrl) playPreview(track.previewUrl);
+
+    return () => {
+      stopPreview(); // stop audio on unmount or index change
+    };
+  }, [currentIndex, suggestions]);
+
+  const handleNextTrack = async () => {
+    translateX.value = 0;
+    await stopPreview();
+    setCurrentIndex((prev) => (prev + 1) % suggestions.length);
+  };
+
+  // Swipe gesture to skip track
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       translateX.value = event.translationX;
     })
     .onEnd((event) => {
       if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
-        // Animate off-screen
-        translateX.value = withSpring(
-          event.translationX > 0 ? width : -width,
-          {},
-          () => {
-            translateX.value = 0;
-          }
+        const direction = event.translationX > 0 ? 1 : -1;
+        translateX.value = withSpring(direction * width, {}, () =>
+          runOnJS(handleNextTrack)()
         );
       } else {
-        // Snap back to center
         translateX.value = withSpring(0);
       }
     });
@@ -57,75 +125,73 @@ export default function musicscreen() {
     ],
   }));
 
-  // Placeholder data
-  const tracks: Track[] = [
-    {
-      title: "Blinding Lights",
-      artist: "The Weeknd",
-      recommender: "user456",
-      spotifyUrl: "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b",
-      coverUrl:
-        "https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36",
-    },
-    {
-      title: "Midnight City",
-      artist: "M83",
-      recommender: "user123",
-      spotifyUrl: "https://open.spotify.com/track/3sNVsP50132BTNlImLx70i",
-      coverUrl:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYprxUcIQ1gSLCA_gBXTENCkCPTcGPIBZpEw&s",
-    },
-  ];
+  if (suggestions.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Loading songs...</Text>
+      </View>
+    );
+  }
+
+  const current = suggestions[currentIndex];
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <View style={styles.topButtons}>
-          <TouchableOpacity style={[styles.topButton, styles.exploreButton]}>
-            <Text style={styles.topButtonText}>Explore</Text>
-          </TouchableOpacity>
+        {/* 👤 Recommender */}
+        <TouchableOpacity onPress={() => setShowProfileModal(true)}>
+          <Text
+            style={[
+              styles.recommender,
+              { color: "#1DB954", textDecorationLine: "underline" },
+            ]}
+          >
+            Recommended by {current.recommender || "guest"}
+          </Text>
+        </TouchableOpacity>
+        <RecommenderProfileModal
+          visible={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          userName={current.recommender || "guest"}
+        />
 
-          <TouchableOpacity style={[styles.topButton, styles.genreButton]}>
-            <Text style={styles.topButtonText}>Genres</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.recommender}>
-          Recommended by {tracks[0].recommender}
-        </Text>
+        {/* 🎵 Album cover with swipe */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[animatedStyle]}>
+            <Image
+              source={{ uri: current.songCoverUrl }}
+              style={styles.coverImage}
+              resizeMode="cover"
+            />
+          </Animated.View>
+        </GestureDetector>
 
-        <View style={styles.container}>
-          <GestureDetector gesture={panGesture}>
-            <Animated.View style={animatedStyle}>
-              <Image
-                source={{ uri: tracks[0].coverUrl }}
-                style={styles.coverImage}
-              />
-            </Animated.View>
-          </GestureDetector>
-        </View>
-
+        {/* 🎧 Song info */}
         <View style={styles.songInfo}>
-          <Text style={styles.songTitle}>{tracks[0].title}</Text>
-          <Text style={styles.artist}>{tracks[0].artist}</Text>
+          <Text style={styles.songTitle}>{current.title}</Text>
+          <Text style={styles.artist}>{current.artists.join(", ")}</Text>
 
           <TouchableOpacity
-            onPress={() => Linking.openURL(tracks[0].spotifyUrl)}
+            style={styles.spotifyButton}
+            onPress={() => Linking.openURL(current.spotifyLinkUrl)}
           >
-            <Text style={styles.spotifyLink}>Listen on Spotify</Text>
+            <Text style={styles.spotifyText}> Listen on Spotify</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[styles.button, styles.skipButton]}
-            onPress={() => console.log("Skip")}
+            onPress={handleNextTrack}
           >
             <Text style={styles.buttonText}>Skip</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, styles.likeButton]}
-            onPress={() => console.log("Like")}
+            onPress={() =>
+              console.log("Liked:", current.title, "by", current.artists)
+            }
           >
             <Text style={styles.buttonText}>Like 👍</Text>
           </TouchableOpacity>
@@ -136,31 +202,6 @@ export default function musicscreen() {
 }
 
 const styles = StyleSheet.create({
-  topButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
-    marginTop: 60,
-    marginBottom: 20,
-  },
-  topButton: {
-    flex: 1,
-    marginHorizontal: 6,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  exploreButton: {
-    backgroundColor: "#1DB954",
-  },
-  genreButton: {
-    backgroundColor: "#333",
-  },
-  topButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
   container: {
     flex: 1,
     backgroundColor: "#121212",
@@ -172,37 +213,53 @@ const styles = StyleSheet.create({
     color: "#bbb",
     fontSize: 16,
     marginBottom: 10,
+    textAlign: "center",
+    width: "100%",
+    paddingHorizontal: 10,
+    flexWrap: "wrap",
   },
   coverImage: {
-    width: 300,
-    height: 300,
-    borderRadius: 12,
+    width: 320,
+    height: 320,
+    borderRadius: 16,
     marginVertical: 20,
   },
   songInfo: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 50,
   },
   songTitle: {
     color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
+    textAlign: "center",
   },
   artist: {
     color: "#aaa",
-    fontSize: 18,
-    marginTop: 4,
+    fontSize: 15,
+    marginTop: 6,
+    textAlign: "center",
+    width: "100%",
+    paddingHorizontal: 10,
+    flexWrap: "wrap",
   },
-  spotifyLink: {
-    marginTop: 10,
-    color: "#1DB954",
+  spotifyButton: {
+    marginTop: 15,
+    backgroundColor: "#1DB954",
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 50,
+  },
+  spotifyText: {
+    color: "#fff",
     fontSize: 16,
-    textDecorationLine: "underline",
+    fontWeight: "600",
+    textAlign: "center",
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "80%",
+    width: "85%",
   },
   button: {
     flex: 1,
@@ -221,5 +278,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "600",
+  },
+  loadingText: {
+    color: "#ccc",
+    fontSize: 18,
   },
 });

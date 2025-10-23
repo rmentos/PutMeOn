@@ -1,6 +1,7 @@
 import { saveSuggestion, searchSong } from "@/api/api";
 import SuccessModal from "@/app/screens/modals/postSubmit";
 import { playPreview, stopPreview } from "@/library/musicPlayer";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -114,16 +115,27 @@ export default function SuggestionsScreen() {
 
             <TouchableOpacity
               style={[styles.button, styles.submitButton]}
-              onPress={() => {
+              onPress={async () => {
                 if (!selectedSong) return;
-                saveSuggestion(selectedSong, "guest")
-                  .then(() =>
-                    console.log("Track suggestion saved:", selectedSong)
-                  )
-                  .catch((err) =>
-                    console.error(" Failed to save suggestion:", err)
-                  );
-                setShowModal(true);
+
+                try {
+                  const json = await AsyncStorage.getItem("user");
+                  let recommenderName = "guest";
+
+                  if (json) {
+                    const storedUser = JSON.parse(json);
+                    if (storedUser?.userName?.trim()) {
+                      recommenderName = storedUser.userName.trim();
+                    }
+                  }
+
+                  await saveSuggestion(selectedSong, recommenderName);
+                  console.log("Track suggestion saved by:", recommenderName);
+
+                  setShowModal(true);
+                } catch (err) {
+                  console.error(" Failed to save suggestion:", err);
+                }
               }}
             >
               <Text style={styles.buttonText}>Submit</Text>
@@ -139,7 +151,7 @@ export default function SuggestionsScreen() {
                 onGoHome={() => {
                   setShowModal(false); // close modal
                   stopPreview();
-                  router.push("/");
+                  router.push("/actions");
                 }}
               />
             )}

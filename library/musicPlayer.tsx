@@ -22,40 +22,61 @@ export async function initializeAudioMode() {
 export async function playPreview(url: string) {
   try {
     if (!url) {
-      console.warn(" No preview URL provided");
+      console.warn("No preview URL provided");
       return;
     }
 
-    // Stop any previous sound
+    // stop & unload any previously playing audio FIRST
     if (currentSound) {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
+      try {
+        await currentSound.stopAsync();
+      } catch (e) {
+        console.log(" Sound already stopped");
+      }
+      try {
+        await currentSound.unloadAsync();
+      } catch (e) {
+        console.log("Sound already unloaded");
+      }
       currentSound = null;
     }
 
-    // Initialize mode
+    // ensure audio mode is active before playing
     await initializeAudioMode();
 
-    // Load and play sound
-    console.log("🎵 Playing preview from:", url);
+    console.log("Playing preview from:", url);
+
+    // load new audio
     const { sound } = await Audio.Sound.createAsync(
       { uri: url },
       { shouldPlay: true }
     );
     currentSound = sound;
 
-    // Automatically release sound after it finishes
-    sound.setOnPlaybackStatusUpdate((status) => {
+    // auto-release when finished
+    sound.setOnPlaybackStatusUpdate(async (status) => {
       if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync();
-        currentSound = null;
+        try {
+          await sound.unloadAsync();
+        } catch (err) {
+          console.warn("⚠️ Error unloading finished sound:", err);
+        }
+        if (currentSound === sound) {
+          currentSound = null;
+        }
       }
     });
   } catch (error) {
-    console.error("💥 Error playing preview:", error);
+    console.error("Error playing preview:", error);
+    // graceful cleanup if something breaks mid-load
+    if (currentSound) {
+      try {
+        await currentSound.unloadAsync();
+      } catch {}
+      currentSound = null;
+    }
   }
 }
-
 // Stop playback manually (optional)
 export async function stopPreview() {
   try {

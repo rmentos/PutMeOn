@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { router } from "expo-router";
+import React, { useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ProfileScreen from "./modals/profilescreen";
 
 export default function ChooseActionScreen() {
@@ -35,7 +35,7 @@ export default function ChooseActionScreen() {
             }}
             style={styles.icon}
           />
-          <Text style={styles.buttonText}>Edit Profile</Text>
+          <Text style={styles.buttonText}>View/Edit Profile</Text>
         </TouchableOpacity>
         {showProfile && (
           <ProfileScreen
